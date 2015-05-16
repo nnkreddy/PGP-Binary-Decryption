@@ -27,7 +27,6 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
     <flow name="FileEPFlow" initialState="stopped">
         <file:inbound-endpoint path="src/test/resources" connector-ref="File" responseTimeout="10000" doc:name="File"/>
         <vm:outbound-endpoint exchange-pattern="request-response" path="vmq" doc:name="VM" connector-ref="VM"/>
-        <object-to-string-transformer doc:name="Object to String"/>
     </flow>
     <flow name="BlogicFlow" initialState="started">
         <vm:inbound-endpoint exchange-pattern="request-response" path="vmq" doc:name="VM" connector-ref="VM"/>
