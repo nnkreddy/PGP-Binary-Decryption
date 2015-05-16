@@ -22,7 +22,11 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
         <message-properties-transformer doc:name="Message Properties">
             <add-message-property key="KeyId" value="#[message.inboundProperties['http.query.params'].KeyId]"/>
         </message-properties-transformer>
-        <expression-component doc:name="Expression"><![CDATA[app.registry.FileEPFlow.start();]]></expression-component>
+        <expression-component doc:name="Expression"><![CDATA[if(app.registry.FileEPFlow.isStopped())
+
+		{
+               app.registry.FileEPFlow.start();
+       }]]></expression-component>
     </flow>
     <flow name="FileEPFlow" initialState="stopped">
         <file:inbound-endpoint path="src/test/resources" connector-ref="File" responseTimeout="10000" doc:name="File"/>
