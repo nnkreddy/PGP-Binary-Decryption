@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:encryption="http://www.mulesoft.org/schema/mule/encryption" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:encryption="http://www.mulesoft.org/schema/mule/encryption" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.6.1"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
@@ -9,23 +9,31 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
 http://www.mulesoft.org/schema/mule/encryption http://www.mulesoft.org/schema/mule/encryption/current/mule-encryption.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
-http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
     <file:connector name="File" autoDelete="true" streaming="false" validateConnections="true" doc:name="File"/>
     <encryption:config name="Encryption" defaultEncrypter="PGP_ENCRYPTER" doc:name="Encryption">
         <encryption:pgp-encrypter-config publicKeyRingFileName="src/main/resources/pubring.gpg" secretKeyRingFileName="src/main/resources/secring.gpg" secretAliasId="8243430131187935100" secretPassphrase="test test 1" principal="test test &lt;test@test.com&gt;"/>
     </encryption:config>
     <http:listener-config name="HTTP_Listener_Configuration" host="localhost" port="8081" doc:name="HTTP Listener Configuration"/>
+    <vm:connector name="VM" validateConnections="true" doc:name="VM"/>
     <flow name="simplepgpprjctFlow">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/pgp/*" doc:name="HTTP"/>
         <message-properties-transformer doc:name="Message Properties">
             <add-message-property key="KeyId" value="#[message.inboundProperties['http.query.params'].KeyId]"/>
         </message-properties-transformer>
-        <expression-component doc:name="Expression"><![CDATA[app.registry.BlogicFlow.start();]]></expression-component>
+        <expression-component doc:name="Expression"><![CDATA[app.registry.FileEPFlow.start();]]></expression-component>
     </flow>
-    <flow name="BlogicFlow" initialState="stopped">
+    <flow name="FileEPFlow" initialState="stopped">
         <file:inbound-endpoint path="src/test/resources" connector-ref="File" responseTimeout="10000" doc:name="File"/>
+        <vm:outbound-endpoint exchange-pattern="request-response" path="vmq" doc:name="VM" connector-ref="VM"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+    </flow>
+    <flow name="BlogicFlow" initialState="started">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="vmq" doc:name="VM" connector-ref="VM"/>
         <encryption:decrypt config-ref="Encryption" doc:name="Decryption"/>
         <object-to-string-transformer doc:name="Object to String"/>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="#[payload]" doc:name="Set Payload"/>
     </flow>
 </mule>
